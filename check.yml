@@ -1,0 +1,38 @@
+name: Amazon在庫チェック
+
+on:
+  schedule:
+    # 10分ごとに実行（日本時間 8:00〜23:00 に相当する時間帯）
+    # GitHub Actions の cron は UTC なので注意
+    - cron: '*/10 * * * *'
+
+  # 手動実行ボタン
+  workflow_dispatch:
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Run stock checker
+        run: node index.mjs
+        env:
+          AMAZON_EMAIL: ${{ secrets.AMAZON_EMAIL }}
+          AMAZON_PASSWORD: ${{ secrets.AMAZON_PASSWORD }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}

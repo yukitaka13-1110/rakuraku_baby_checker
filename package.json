@@ -1,0 +1,13 @@
+{
+  "name": "amazon-stock-checker",
+  "version": "1.0.0",
+  "description": "Amazon らくらくベビー 出産準備お試しBox 在庫監視ツール",
+  "type": "module",
+  "scripts": {
+    "check": "node index.mjs",
+    "test-line": "node test-line.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
