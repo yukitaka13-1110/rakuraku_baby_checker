@@ -63,12 +63,17 @@ async function loginToAmazon(page) {
   await page.click("#auth-signin-button");
   await page.waitForTimeout(3000);
 
-  // ログイン成功の確認（トップページにリダイレクトされるか確認）
+  // ログイン成功の確認（/ap/が含まれていないことを確認）
   const currentUrl = page.url();
-  if (currentUrl.includes("/ap/signin") || currentUrl.includes("/ap/mfa")) {
+  console.log(`ログイン後のURL: ${currentUrl}`);
+
+  if (currentUrl.includes("/ap/")) {
+    // スクリーンショットを保存
+    await page.screenshot({ path: "login_error.png" });
     throw new Error(
-      `ログインに失敗した可能性があります。URL: ${currentUrl}\n` +
-      "2段階認証が有効になっていないか確認してください。"
+      `ログインに失敗しました。URL: ${currentUrl}\n` +
+      "スクリーンショット: login_error.png\n" +
+      "2段階認証が有効になっている場合は無効にしてください。"
     );
   }
 
@@ -91,6 +96,12 @@ async function checkStock(page) {
   // デバッグ用：ページタイトルを出力
   const title = await page.title();
   console.log(`ページタイトル: ${title}`);
+
+  // スクリーンショット保存
+  const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+  const screenshotPath = `screenshot_${timestamp}.png`;
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  console.log(`スクリーンショットを保存しました: ${screenshotPath}`);
 
   // a-alert-heading に「売り切れました」があるか確認
   const alertHeading = await page.$(".a-alert-heading");
@@ -179,22 +190,22 @@ async function main() {
     console.log(`在庫状況: ${result.inStock ? "あり" : "なし"}`);
     console.log(`詳細: ${result.detail}`);
 
-    if (result.inStock) {
-      // 🎉 在庫あり → LINE通知！
-      await sendLineNotification(
-        `🎉 Amazon出産準備お試しBoxが入荷しました！\n\n` +
-        `今すぐ確認 → ${TARGET_URL}\n\n` +
-        `${result.detail}`
-      );
-    } else {
-      // 在庫なしでも簡易メッセージを送る
-      await sendLineNotification(
-        `在庫チェック完了\n\n` +
-        `在庫状況: なし\n` +
-        `${result.detail}`
-      );
-      console.log("在庫なし。簡易メッセージを送信しました。");
-    }
+    // if (result.inStock) {
+    //   // 🎉 在庫あり → LINE通知！
+    //   await sendLineNotification(
+    //     `🎉 Amazon出産準備お試しBoxが入荷しました！\n\n` +
+    //     `今すぐ確認 → ${TARGET_URL}\n\n` +
+    //     `${result.detail}`
+    //   );
+    // } else {
+    //   // 在庫なしでも簡易メッセージを送る
+    //   await sendLineNotification(
+    //     `在庫チェック完了\n\n` +
+    //     `在庫状況: なし\n` +
+    //     `${result.detail}`
+    //   );
+    //   console.log("在庫なし。簡易メッセージを送信しました。");
+    // }
   } catch (error) {
     console.error("エラーが発生しました:", error.message);
 
