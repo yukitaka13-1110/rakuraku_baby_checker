@@ -1,4 +1,4 @@
-name: Amazon在庫チェック
+name: 在庫チェック
 
 on:
   # 外部cronサービスからのトリガー

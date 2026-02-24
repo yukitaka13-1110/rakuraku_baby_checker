@@ -6,7 +6,7 @@ import fs from "fs";
 // ============================================================
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
-// お試しBoxのURL
+// 監視対象のURL
 const TARGET_URL =
   "https://www.amazon.co.jp/baby-reg/welcomebox?ref_=br_dsk_hp_bene_wb";
 
@@ -41,7 +41,7 @@ async function sendLineNotification(message) {
 // 在庫をチェックする
 // ============================================================
 async function checkStock(page) {
-  console.log("お試しBoxページにアクセス中...");
+  console.log("ページにアクセス中...");
 
   await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(3000);
@@ -134,7 +134,7 @@ async function main() {
     if (result.inStock) {
       // 🎉 在庫あり → LINE通知！
       await sendLineNotification(
-        `🎉 Amazon出産準備お試しBoxが入荷しました！\n\n` +
+        `🎉 商品が入荷しました！\n\n` +
         `今すぐ確認 → ${TARGET_URL}\n\n` +
         `${result.detail}`
       );
