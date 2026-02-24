@@ -1,15 +1,17 @@
 import { chromium } from "playwright";
+import fs from "fs";
 
 // ============================================================
 // 環境変数から設定を読み込む
 // ============================================================
-const AMAZON_EMAIL = process.env.AMAZON_EMAIL;
-const AMAZON_PASSWORD = process.env.AMAZON_PASSWORD;
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
 // お試しBoxのURL
 const TARGET_URL =
   "https://www.amazon.co.jp/baby-reg/welcomebox?ref_=br_dsk_hp_bene_wb";
+
+// 認証ファイルのパス
+const AUTH_STATE_PATH = "auth-state.json";
 
 // ============================================================
 // LINE Messaging API でプッシュ通知を送る
@@ -34,51 +36,6 @@ async function sendLineNotification(message) {
   }
 }
 
-// ============================================================
-// Amazon にログインする
-// ============================================================
-async function loginToAmazon(page) {
-  console.log("Amazonにログイン中...");
-
-  await page.goto("https://www.amazon.co.jp/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.co.jp%2F&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=jpflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0", {
-    waitUntil: "domcontentloaded",
-  });
-
-  // メールアドレス入力
-  await page.waitForSelector("#ap_email_login", { timeout: 15000 });
-  await page.fill("#ap_email_login", AMAZON_EMAIL);
-
-  // 「次に進む」ボタンがある場合はクリック（2ステップログインの場合）
-  const continueButton = await page.$('input[aria-labelledby="continue-announce"]');
-  if (continueButton) {
-    await continueButton.click();
-    await page.waitForTimeout(2000);
-  }
-
-  // パスワード入力
-  await page.waitForSelector("#ap_password", { timeout: 15000 });
-  await page.fill("#ap_password", AMAZON_PASSWORD);
-
-  // ログインボタンをクリック
-  await page.click("#auth-signin-button");
-  await page.waitForTimeout(3000);
-
-  // ログイン成功の確認（/ap/が含まれていないことを確認）
-  const currentUrl = page.url();
-  console.log(`ログイン後のURL: ${currentUrl}`);
-
-  if (currentUrl.includes("/ap/")) {
-    // スクリーンショットを保存
-    await page.screenshot({ path: "login_error.png" });
-    throw new Error(
-      `ログインに失敗しました。URL: ${currentUrl}\n` +
-      "スクリーンショット: login_error.png\n" +
-      "2段階認証が有効になっている場合は無効にしてください。"
-    );
-  }
-
-  console.log("ログイン成功");
-}
 
 // ============================================================
 // 在庫をチェックする
@@ -154,18 +111,11 @@ async function checkStock(page) {
 // メイン処理
 // ============================================================
 async function main() {
-  // 環境変数の検証
-  const requiredEnvVars = {
-    AMAZON_EMAIL,
-    AMAZON_PASSWORD,
-    LINE_CHANNEL_ACCESS_TOKEN,
-  };
-
-  for (const [name, value] of Object.entries(requiredEnvVars)) {
-    if (!value) {
-      console.error(`環境変数 ${name} が設定されていません`);
-      process.exit(1);
-    }
+  // 認証ファイルの存在確認
+  if (!fs.existsSync(AUTH_STATE_PATH)) {
+    console.error(`認証ファイルが見つかりません: ${AUTH_STATE_PATH}`);
+    console.error("まず save-auth.mjs を実行してログイン情報を保存してください");
+    process.exit(1);
   }
 
   const browser = await chromium.launch({
@@ -174,17 +124,19 @@ async function main() {
   });
 
   try {
+    // 保存した認証状態を読み込んでコンテキストを作成
+    console.log("認証情報を読み込み中...");
     const context = await browser.newContext({
+      storageState: AUTH_STATE_PATH,
       locale: "ja-JP",
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     });
+    console.log("✅ ログイン状態を復元しました（ログイン処理スキップ）");
+
     const page = await context.newPage();
 
-    // ログイン
-    await loginToAmazon(page);
-
-    // 在庫チェック
+    // 在庫チェック（ログイン済み状態）
     const result = await checkStock(page);
 
     console.log(`在庫状況: ${result.inStock ? "あり" : "なし"}`);

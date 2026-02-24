@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "check": "node index.mjs",
-    "test-line": "node test-line.mjs"
+    "test-line": "node test-line.mjs",
+    "save-auth": "node save-auth.mjs"
   },
   "dependencies": {
     "playwright": "^1.49.0"
