@@ -148,7 +148,6 @@ async function main() {
     AMAZON_EMAIL,
     AMAZON_PASSWORD,
     LINE_CHANNEL_ACCESS_TOKEN,
-    LINE_USER_ID,
   };
 
   for (const [name, value] of Object.entries(requiredEnvVars)) {
