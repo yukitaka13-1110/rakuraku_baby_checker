@@ -1,10 +1,9 @@
 name: Amazon在庫チェック
 
 on:
-  schedule:
-    # 5分ごとに実行
-    # GitHub Actions の cron は UTC なので注意
-    - cron: '*/5 * * * *'
+  # 外部cronサービスからのトリガー
+  repository_dispatch:
+    types: [check-stock]
 
   # 手動実行ボタン
   workflow_dispatch:
