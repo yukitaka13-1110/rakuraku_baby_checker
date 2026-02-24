@@ -6,7 +6,6 @@ import { chromium } from "playwright";
 const AMAZON_EMAIL = process.env.AMAZON_EMAIL;
 const AMAZON_PASSWORD = process.env.AMAZON_PASSWORD;
 const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-const LINE_USER_ID = process.env.LINE_USER_ID;
 
 // お試しBoxのURL
 const TARGET_URL =
@@ -16,18 +15,6 @@ const TARGET_URL =
 // LINE Messaging API でプッシュ通知を送る
 // ============================================================
 async function sendLineNotification(message) {
-  // const res = await fetch("https://api.line.me/v2/bot/message/push", {
-  //   method: "POST",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     Authorization: `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
-  //   },
-  //   body: JSON.stringify({
-  //     to: LINE_USER_ID,
-  //     messages: [{ type: "text", text: message }],
-  //   }),
-  // });
-
   const res = await fetch("https://api.line.me/v2/bot/message/broadcast", {
     method: "POST",
     headers: {
