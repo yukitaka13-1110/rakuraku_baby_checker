@@ -190,30 +190,18 @@ async function main() {
     console.log(`在庫状況: ${result.inStock ? "あり" : "なし"}`);
     console.log(`詳細: ${result.detail}`);
 
-    // if (result.inStock) {
-    //   // 🎉 在庫あり → LINE通知！
-    //   await sendLineNotification(
-    //     `🎉 Amazon出産準備お試しBoxが入荷しました！\n\n` +
-    //     `今すぐ確認 → ${TARGET_URL}\n\n` +
-    //     `${result.detail}`
-    //   );
-    // } else {
-    //   // 在庫なしでも簡易メッセージを送る
-    //   await sendLineNotification(
-    //     `在庫チェック完了\n\n` +
-    //     `在庫状況: なし\n` +
-    //     `${result.detail}`
-    //   );
-    //   console.log("在庫なし。簡易メッセージを送信しました。");
-    // }
+    if (result.inStock) {
+      // 🎉 在庫あり → LINE通知！
+      await sendLineNotification(
+        `🎉 Amazon出産準備お試しBoxが入荷しました！\n\n` +
+        `今すぐ確認 → ${TARGET_URL}\n\n` +
+        `${result.detail}`
+      );
+    } else {
+      console.log("在庫なし。");
+    }
   } catch (error) {
     console.error("エラーが発生しました:", error.message);
-
-    // エラー時もLINE通知（スクリプトが壊れたことに気づけるように）
-    await sendLineNotification(
-      `⚠️ Amazon在庫チェックでエラーが発生しました\n\n${error.message}`
-    ).catch(() => {});
-
     process.exit(1);
   } finally {
     await browser.close();
