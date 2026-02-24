@@ -46,19 +46,9 @@ async function checkStock(page) {
   await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(3000);
 
-  // ページの内容を取得して判定
-  const pageContent = await page.content();
-  const pageText = await page.innerText("body").catch(() => "");
-
   // デバッグ用：ページタイトルを出力
   const title = await page.title();
   console.log(`ページタイトル: ${title}`);
-
-  // スクリーンショット保存
-  const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-  const screenshotPath = `screenshot_${timestamp}.png`;
-  await page.screenshot({ path: screenshotPath, fullPage: true });
-  console.log(`スクリーンショットを保存しました: ${screenshotPath}`);
 
   // a-alert-heading に「売り切れました」があるか確認
   const alertHeading = await page.$(".a-alert-heading");
@@ -114,7 +104,6 @@ async function main() {
   // 認証ファイルの存在確認
   if (!fs.existsSync(AUTH_STATE_PATH)) {
     console.error(`認証ファイルが見つかりません: ${AUTH_STATE_PATH}`);
-    console.error("まず save-auth.mjs を実行してログイン情報を保存してください");
     process.exit(1);
   }
 

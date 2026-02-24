@@ -2,7 +2,7 @@ import { chromium } from "playwright";
 
 const AMAZON_EMAIL = process.env.AMAZON_EMAIL;
 const AMAZON_PASSWORD = process.env.AMAZON_PASSWORD;
-const INACTIVITY_TIMEOUT = 10; // 10秒間操作がなければ自動保存
+const INACTIVITY_TIMEOUT = 60; // 10秒間操作がなければ自動保存
 
 async function saveAuthState() {
   console.log("ブラウザを起動中...");
