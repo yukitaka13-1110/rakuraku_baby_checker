@@ -2,9 +2,9 @@ name: Amazon在庫チェック
 
 on:
   schedule:
-    # 10分ごとに実行（日本時間 8:00〜23:00 に相当する時間帯）
+    # 5分ごとに実行
     # GitHub Actions の cron は UTC なので注意
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
 
   # 手動実行ボタン
   workflow_dispatch:
