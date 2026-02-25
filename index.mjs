@@ -97,6 +97,102 @@ async function checkStock(page) {
 }
 
 // ============================================================
+// カートに入れる
+// ============================================================
+async function addToCart(page) {
+  // 「今すぐカートに入れる」を優先的に探す
+  const instantButton = page.getByText("今すぐカートに入れる", { exact: true });
+  if ((await instantButton.count()) > 0) {
+    console.log("「今すぐカートに入れる」ボタンをクリックします...");
+    await instantButton.first().click();
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
+    console.log("カートに入れました");
+    return;
+  }
+
+  // なければ「カートに入れる」を探す
+  const addButton = page.getByText("カートに入れる", { exact: true });
+  if ((await addButton.count()) > 0) {
+    console.log("「カートに入れる」ボタンをクリックします...");
+    await addButton.first().click();
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
+    console.log("カートに入れました");
+    return;
+  }
+
+  throw new Error("「今すぐカートに入れる」「カートに入れる」ボタンが見つかりませんでした");
+}
+
+// ============================================================
+// カートから注文を確定する
+// ============================================================
+async function placeOrder(page) {
+  // 1. カートページにアクセス
+  console.log("カートページにアクセス中...");
+  await page.goto("https://www.amazon.co.jp/gp/cart/view.html", {
+    waitUntil: "domcontentloaded",
+  });
+  await page.waitForTimeout(3000);
+  console.log(`ページタイトル: ${await page.title()}`);
+
+  // 2. 1回目「レジに進む」ボタンをクリック
+  const checkoutButton = page.getByRole("button", { name: "レジに進む" });
+  if ((await checkoutButton.count()) === 0) {
+    const fallback = page.locator(
+      'input[value="レジに進む"], [name="proceedToRetailCheckout"]'
+    );
+    if ((await fallback.count()) > 0) {
+      console.log("「レジに進む」ボタンをクリックします（フォールバック）...");
+      await fallback.first().click();
+    } else {
+      throw new Error("「レジに進む」ボタンが見つかりませんでした");
+    }
+  } else {
+    console.log("「レジに進む」ボタンをクリックします...");
+    await checkoutButton.click();
+  }
+
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForTimeout(3000);
+  console.log(`遷移後のページタイトル: ${await page.title()}`);
+
+  // 3. 2回目「レジに進む」ボタンをクリック
+  const checkoutButton2 = page.getByText("レジに進む", { exact: true });
+  if ((await checkoutButton2.count()) > 0) {
+    console.log("2回目:「レジに進む」ボタンをクリックします...");
+    await checkoutButton2.first().click();
+
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
+    console.log(`2回目遷移後のページタイトル: ${await page.title()}`);
+  } else {
+    console.log("2回目の「レジに進む」は表示されていません。スキップします。");
+  }
+
+  // 4.「注文を確定する」ボタンをクリック
+  const placeOrderButton = page.getByText("注文を確定する", { exact: true });
+  if ((await placeOrderButton.count()) > 0) {
+    console.log("「注文を確定する」ボタンをクリックします...");
+    await placeOrderButton.first().click();
+
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
+    console.log(`注文確定後のページタイトル: ${await page.title()}`);
+
+    // スクリーンショット保存
+    const timestamp = new Date().toISOString().replace(/:/g, "-").split(".")[0];
+    await page.screenshot({ path: `screenshot_order_${timestamp}.png`, fullPage: true });
+    console.log("注文完了のスクリーンショットを保存しました");
+
+    return { success: true, detail: "注文を確定しました" };
+  } else {
+    throw new Error("「注文を確定する」ボタンが見つかりませんでした");
+  }
+}
+
+// ============================================================
 // メイン処理
 // ============================================================
 async function main() {
@@ -131,12 +227,28 @@ async function main() {
     console.log(`詳細: ${result.detail}`);
 
     if (result.inStock) {
-      // 🎉 在庫あり → LINE通知！
+      // 🎉 在庫あり → LINE通知
       await sendLineNotification(
         `🎉 商品が入荷しました！\n\n` +
         `今すぐ確認 → ${TARGET_URL}\n\n` +
         `${result.detail}`
       );
+
+      // カートに入れてから注文処理を実行
+      try {
+        await addToCart(page);
+        const orderResult = await placeOrder(page);
+        if (orderResult.success) {
+          await sendLineNotification(
+            `✅ 注文が完了しました！\n\n${orderResult.detail}`
+          );
+        }
+      } catch (orderError) {
+        console.error("注文処理でエラーが発生しました:", orderError.message);
+        await sendLineNotification(
+          `⚠️ 在庫を検出しましたが、注文処理に失敗しました。\n\n${orderError.message}\n\n手動で確認してください → ${TARGET_URL}`
+        );
+      }
     } else {
       console.log("在庫なし。");
     }
