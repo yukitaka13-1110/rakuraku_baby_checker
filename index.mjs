@@ -50,7 +50,21 @@ async function checkStock(page) {
   const title = await page.title();
   console.log(`ページタイトル: ${title}`);
 
-  // a-alert-heading に「売り切れました」があるか確認
+  // スクリーンショット保存
+  const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+  const screenshotPath = `screenshot_${timestamp}.png`;
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  console.log(`スクリーンショットを保存しました: ${screenshotPath}`);
+
+  // 1. ページが正しいか確認（「出産準備お試しBox」の存在確認）
+  const targetTextCount = await page.getByText('出産準備お試しBox').count();
+  console.log(`「出産準備お試しBox」の出現数: ${targetTextCount}`);
+
+  if (targetTextCount === 0) {
+    throw new Error('ページの構造が想定と異なります（「出産準備お試しBox」が見つかりません）');
+  }
+
+  // 2. 「売り切れました」表示を確認
   const alertHeading = await page.$(".a-alert-heading");
   let soldOutFound = false;
   if (alertHeading) {
@@ -66,33 +80,18 @@ async function checkStock(page) {
     console.log("a-alert-heading 要素が見つかりませんでした");
   }
 
-  // --- 在庫あり判定 ---
-  // 「カートに入れる」「今すぐもらう」ボタンがあれば在庫あり
-  const addToCartButton = await page.$(
-    [
-      'input[name="submit.addToCart"]',
-      "#add-to-cart-button",
-      'input[value*="カートに入れる"]',
-      'button:has-text("カートに入れる")',
-      'a:has-text("今すぐカートに入れる")',
-      'a:has-text("今すぐもらう")',
-    ].join(", ")
-  );
-
-  // --- 在庫切れ判定 ---
-  const isOutOfStock = soldOutFound;
-
-  if (addToCartButton || !isOutOfStock) {
-    return {
-      inStock: true,
-      soldOutFound,
-      detail: `カートボタン: ${addToCartButton ? 'あり' : 'なし'}, 売り切れ表示: ${soldOutFound ? 'あり' : 'なし'}`
-    };
-  } else {
+  // 3. 在庫判定
+  if (soldOutFound) {
     return {
       inStock: false,
       soldOutFound,
       detail: "「売り切れました」の表示を検出しました",
+    };
+  } else {
+    return {
+      inStock: true,
+      soldOutFound,
+      detail: "在庫あり",
     };
   }
 }
