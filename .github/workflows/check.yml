@@ -60,3 +60,31 @@ jobs:
           path: screenshot_*.png
           retention-days: 1
           if-no-files-found: ignore
+
+      - name: Check previous run status
+        if: failure()
+        id: previous-run
+        run: |
+          # 前回の実行結果を取得
+          PREVIOUS_RUN=$(gh run list --workflow=check.yml --limit 2 --json conclusion --jq '.[1].conclusion // "null"')
+          echo "previous_conclusion=$PREVIOUS_RUN" >> $GITHUB_OUTPUT
+          echo "前回の実行結果: $PREVIOUS_RUN"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Notify failure to LINE
+        if: failure() && steps.previous-run.outputs.previous_conclusion == 'success'
+        run: |
+          curl -X POST https://api.line.me/v2/bot/message/broadcast \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $LINE_CHANNEL_ACCESS_TOKEN" \
+            -d '{
+              "messages": [
+                {
+                  "type": "text",
+                  "text": "ログアウトされた可能性があります。\n管理者はセッション情報を更新してください。"
+                }
+              ]
+            }'
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
