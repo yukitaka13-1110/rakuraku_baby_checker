@@ -52,7 +52,6 @@ async function checkStock(page) {
 
   // 1. ページが正しいか確認
   const targetTextCount = await page.getByText('出産準備お試しBox').count();
-  console.log(`「出産準備お試しBox」の出現数: ${targetTextCount}`);
 
   if (targetTextCount === 0) {
     throw new Error('ページの構造が想定と異なります（「出産準備お試しBox」が見つかりません）');
@@ -65,7 +64,6 @@ async function checkStock(page) {
     const alertText = await alertHeading.innerText();
     console.log(`a-alert-heading のテキスト: ${alertText}`);
     if (alertText.includes("売り切れました")) {
-      console.log("「売り切れました」が見つかりました");
       soldOutFound = true;
     } else {
       console.log("「売り切れました」は見つかりませんでした");
