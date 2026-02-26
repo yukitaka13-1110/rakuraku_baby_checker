@@ -221,6 +221,7 @@ async function main() {
       const elapsedSec = Math.floor(elapsed / 1000);
       console.log(`\n--- チェック #${checkCount}（経過: ${elapsedSec}秒） ---`);
 
+      const checkStartTime = Date.now();
       try {
         const result = await checkStock(page);
         console.log(`在庫状況: ${result.inStock ? "あり" : "なし"}`);
@@ -259,11 +260,12 @@ async function main() {
         // チェックエラーはスキップしてループ継続
       }
 
-      // 次のチェックまで待機（残り時間を考慮）
+      // 次のチェックまで待機（処理時間を差し引いてインターバルを一定に保つ）
+      const processingTime = Date.now() - checkStartTime;
       const remaining = LOOP_DURATION_MS - (Date.now() - startTime);
       if (remaining <= 0) break;
-      const waitTime = Math.min(CHECK_INTERVAL_MS, remaining);
-      console.log(`次のチェックまで ${waitTime / 1000} 秒待機...`);
+      const waitTime = Math.min(Math.max(CHECK_INTERVAL_MS - processingTime, 0), remaining);
+      console.log(`処理時間: ${(processingTime / 1000).toFixed(1)}秒、次のチェックまで ${(waitTime / 1000).toFixed(1)} 秒待機...`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
 
